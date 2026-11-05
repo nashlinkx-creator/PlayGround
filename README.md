@@ -14,8 +14,9 @@ A self-contained 3D skate park game built with Three.js. Drop into Sunset Valley
 | Grab | `G` |
 | Manual | `C` |
 | Pause | `Esc` / `P` |
+| Mute | `M` |
 
-On touch devices use the on-screen joystick and trick buttons. Touch the board to start.
+On touch devices use the on-screen joystick and trick buttons. Tap **START GAME** (or **OLLIE**) to drop in; the pause button sits in the top-right corner.
 
 **Run it locally**
 

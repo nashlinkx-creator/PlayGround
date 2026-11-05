@@ -49,6 +49,7 @@ const ui = {
   againBtn: $('againBtn'),
   menuBtn: $('menuBtn'),
   resumeBtn: $('resumeBtn'),
+  quitBtn: $('quitBtn'),
 }
 
 /* fonts are needed by the procedural canvas textures */
@@ -104,6 +105,8 @@ const game = {
   finishTimer: 0,
   started: false,
   lastSecond: 120,
+  countdown: 0,
+  countdownShown: 0,
 }
 
 try {
@@ -339,10 +342,28 @@ function resetRunState() {
   ui.comboPanel.classList.remove('show')
   ui.results.classList.add('hidden')
   ui.pause.classList.add('hidden')
+  ui.countdown.classList.add('hidden')
   ui.confetti.innerHTML = ''
   resetPlayer()
   updateScoreUI()
   updateTimerUI()
+}
+
+function flashCount(text, go = false) {
+  ui.countNum.textContent = text
+  ui.countNum.className = ''
+  void ui.countNum.offsetWidth
+  ui.countNum.className = go ? 'go tick' : 'tick'
+}
+
+function beginRolling() {
+  player.vx = Math.sin(player.heading) * 5.4
+  player.vz = Math.cos(player.heading) * 5.4
+  player.speed = 5.4
+  game.state = 'running'
+  game.lastSecond = 120
+  showStatus('DROP IN!', 1500)
+  audio.go()
 }
 
 function startRun() {
@@ -356,21 +377,36 @@ function startRun() {
     ui.touch.classList.remove('hidden')
   }
   resetRunState()
-  player.vx = Math.sin(player.heading) * 5.4
-  player.vz = Math.cos(player.heading) * 5.4
-  player.speed = 5.4
+  ui.pauseBtn.disabled = false
   camHeading = player.heading
   const f = new THREE.Vector3(Math.sin(player.heading), 0, Math.cos(player.heading))
   camera.position.set(player.x - f.x * 6.2, player.y + 3.2, player.z - f.z * 6.2)
   camLook.set(player.x + f.x * 3, player.y + 1.3, player.z + f.z * 3)
   camera.lookAt(camLook)
-  game.state = 'running'
   game.started = true
-  showStatus('DROP IN!', 1500)
-  audio.go()
+  game.countdown = 3
+  game.countdownShown = 3
+  game.state = 'countdown'
+  ui.countdown.classList.remove('hidden')
+  flashCount('3')
+  audio.beep(false)
   audio.setMuted(audio.muted)
   updateScoreUI()
   updateTimerUI()
+}
+
+function updateCountdown(elapsed) {
+  game.countdown -= elapsed
+  const seconds = Math.ceil(Math.max(0, game.countdown))
+  if (seconds > 0 && seconds !== game.countdownShown) {
+    game.countdownShown = seconds
+    flashCount(String(seconds))
+    audio.beep(seconds === 1)
+  }
+  if (game.countdown <= 0) {
+    ui.countdown.classList.add('hidden')
+    beginRolling()
+  }
 }
 
 function finishRun() {
@@ -701,6 +737,7 @@ ui.startBtn.addEventListener('click', startRun)
 ui.againBtn.addEventListener('click', startRun)
 ui.menuBtn.addEventListener('click', toMenu)
 ui.resumeBtn.addEventListener('click', togglePause)
+ui.quitBtn.addEventListener('click', endRunEarly)
 ui.soundBtn.addEventListener('click', toggleMute)
 ui.pauseBtn.addEventListener('click', togglePause)
 
@@ -721,6 +758,13 @@ function togglePause() {
     game.state = 'running'
     ui.pause.classList.add('hidden')
   }
+}
+
+function endRunEarly() {
+  if (game.state !== 'paused') return
+  game.state = 'running'
+  ui.pause.classList.add('hidden')
+  finishRun()
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -1034,7 +1078,7 @@ function startGrind(rail, d) {
   p.grabWarned = false
   const names = rail.kind === 'coping' ? 'COPING GRIND' : rail.kind === 'ledge' ? '5-0 GRIND' : '50-50 GRIND'
   addTrick(names, 130)
-  feed(rail.railName, null, 'rail')
+  feed(p.grind.railName, null, 'rail')
   audio.grind(true)
   audio.land(0.6)
   showStatus(rail.kind === 'coping' ? 'VERT GRIND' : 'GRIND! BALANCE WITH A/D', 1200)
@@ -1267,7 +1311,7 @@ function updateBail(dt) {
   }
 }
 
-function updatePlayer(dt) {
+function updatePlayer(dt, realDt = dt) {
   const p = player
   updateCharge(dt)
   if (p.bail) {
@@ -1296,7 +1340,7 @@ function updatePlayer(dt) {
 
   // timer
   if (game.state === 'running') {
-    game.time -= dt
+    game.time -= realDt
     if (game.time <= 0) {
       game.time = 0
       updateTimerUI()
@@ -1449,6 +1493,7 @@ function frame() {
   requestAnimationFrame(frame)
   const raw = clock.getDelta()
   const dt = Math.min(0.045, raw)
+  const realDt = Math.min(0.25, raw)
   hudTimer += dt
 
   if (game.state === 'menu') {
@@ -1457,8 +1502,15 @@ function frame() {
     skater.root.rotation.y = world.spawn.heading
     skater.update(dt, { grounded: true, crouch: 0.1, air: false, grab: false, grind: false, manual: false, bail: false, flip: null, pushing: false, lean: 0, balance: 0 })
     audio.update(dt, { grounded: false, speed: 0, grinding: false })
+  } else if (game.state === 'countdown') {
+    updateCountdown(realDt)
+    updateCamera(dt)
+    skater.root.position.set(world.spawn.x, world.groundInfo(world.spawn.x, world.spawn.z).y, world.spawn.z)
+    skater.root.rotation.y = world.spawn.heading
+    skater.update(dt, { grounded: true, crouch: 0.1, air: false, grab: false, grind: false, manual: false, bail: false, flip: null, pushing: false, lean: 0, balance: 0 })
+    audio.update(dt, { grounded: false, speed: 0, grinding: false })
   } else if (game.state === 'running') {
-    updatePlayer(dt)
+    updatePlayer(dt, realDt)
     syncSkater(dt)
     updateCamera(dt)
     audio.update(dt, { grounded: player.grounded, speed: player.speed, grinding: !!player.grind })
@@ -1476,7 +1528,7 @@ function frame() {
     })
     audio.update(dt, { grounded: false, speed: 0, grinding: false })
   } else if (game.state === 'finished') {
-    game.finishTimer += dt
+    game.finishTimer += realDt
     // settle the skater while the results roll in
     if (player.bail) {
       player.bail.t += dt
@@ -1517,12 +1569,14 @@ window.__game = {
   get state() { return game.state },
   get score() { return game.score },
   get time() { return game.time },
+  get countdown() { return game.countdown },
   get combo() { return { ...combo, names: combo.names.slice() } },
   get player() { return player },
   get bails() { return game.bails },
   get tricks() { return game.tricksLanded },
   start: startRun,
   restart: startRun,
+  skipCountdown: () => { if (game.state === 'countdown') game.countdown = 0.001 },
   finish: finishRun,
   menu: toMenu,
   pause: togglePause,

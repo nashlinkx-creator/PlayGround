@@ -789,6 +789,13 @@ kbd {
 .pause-card h2 { margin: 6px 0; font-size: clamp(38px, 6vw, 70px); line-height: 0.9; letter-spacing: -0.04em; }
 .pause-card p { font-size: 11px; letter-spacing: 0.1em; color: rgba(255, 241, 214, 0.62); margin: 0 0 22px; }
 .pause-card .primary { font-size: 14px; padding: 13px 28px; }
+.pause-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.pause-card .ghost {
+  border-color: rgba(255, 241, 214, 0.35);
+  color: var(--cream);
+  padding: 13px 20px;
+}
+.pause-card .ghost:hover { background: var(--cream); color: var(--ink); border-color: var(--cream); }
 
 /* ============ Touch controls ============ */
 .touch {
@@ -932,9 +939,8 @@ kbd {
   .timer-panel { width: 112px; padding: 5px 8px 7px; }
   #timer { font-size: 27px; }
   .timer-panel .micro-label { font-size: 7px; letter-spacing: 0.1em; }
-  .sound-panel { top: calc(14px + var(--safe-top)); }
+  .sound-panel { top: calc(14px + var(--safe-top)); gap: 6px; }
   .icon-btn { width: 34px; height: 34px; font-size: 13px; }
-  .sound-panel #pauseBtn { display: none; }
   .combo-panel { left: auto; right: calc(12px + var(--safe-right)); top: calc(74px + var(--safe-top)); bottom: auto; width: 166px; }
   .combo-head b { font-size: 22px; }
   .combo-base { font-size: 19px; }
@@ -969,7 +975,6 @@ kbd {
 @media (hover: none) and (pointer: coarse) {
   .touch.enabled { display: block; }
   .control-strip { display: none; }
-  .sound-panel #pauseBtn { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   #grain { animation: none; }
