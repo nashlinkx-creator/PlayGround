@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d2430">
+  <meta name="description" content="THRASH PARK — a 3D skate park with a two-minute trick run. Ollie, flip, grab, grind and stack a combo before the clock runs out.">
+  <title>THRASH PARK — 2 Minute Trick Run</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23ff5a1f'/%3E%3Ctext x='32' y='46' font-family='Arial,sans-serif' font-size='30' font-weight='900' fill='%230c222c' text-anchor='middle'%3ETP%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="stage">
+    <canvas id="gl" aria-label="3D skate park"></canvas>
+    <div id="grain" aria-hidden="true"></div>
+    <div id="vignette" aria-hidden="true"></div>
+
+    <div id="hud" class="hidden" aria-live="off">
+      <div class="score-panel">
+        <span class="micro-label">SCORE</span>
+        <strong id="score">0</strong>
+        <span id="bestScore" class="best">BEST 0</span>
+      </div>
+
+      <div class="timer-panel" id="timerPanel">
+        <span class="micro-label">2 MINUTE RUN</span>
+        <div id="timer">2:00</div>
+        <div class="timer-track"><i id="timerFill"></i></div>
+      </div>
+
+      <div class="sound-panel">
+        <button id="soundBtn" class="icon-btn" type="button" aria-label="Toggle sound">♪</button>
+        <button id="pauseBtn" class="icon-btn" type="button" aria-label="Pause game">II</button>
+      </div>
+
+      <div id="comboPanel" class="combo-panel">
+        <div class="combo-head"><span class="micro-label">COMBO</span><b id="comboMult">x1</b></div>
+        <div class="combo-base"><span id="comboBase">0</span><span class="combo-pts">PTS</span></div>
+        <div id="comboTricks" class="combo-tricks"></div>
+      </div>
+
+      <div id="trickPop" class="trick-pop" aria-hidden="true"></div>
+      <div id="trickFeed" class="trick-feed" aria-hidden="true"></div>
+
+      <div id="balanceWrap" class="balance-wrap hidden">
+        <span>BALANCE</span>
+        <div class="balance-track"><i id="balanceMark"></i></div>
+      </div>
+
+      <div id="speedPanel" class="speed-panel">
+        <span class="micro-label">SPEED</span>
+        <b id="speedVal">0</b><span class="speed-unit">MPH</span>
+      </div>
+
+      <div id="statusMsg" class="status-msg"></div>
+
+      <div class="control-strip">
+        <span><kbd>WASD</kbd> ride</span>
+        <span><kbd>SPACE</kbd> ollie</span>
+        <span><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> flip</span>
+        <span><kbd>G</kbd> grab</span>
+        <span><kbd>C</kbd> manual</span>
+      </div>
+    </div>
+
+    <div id="countdown" class="countdown hidden" aria-hidden="true"><span id="countNum">3</span></div>
+
+    <section id="intro" class="overlay intro">
+      <div class="intro-bg"></div>
+      <div class="intro-inner">
+        <div class="intro-copy">
+          <div class="kicker"><span class="dot"></span> SUNSET VALLEY SKATE PARK <span class="dot"></span></div>
+          <h1 class="title">
+            <span class="title-top">THRASH</span>
+            <span class="title-bottom">PARK</span>
+          </h1>
+          <p class="tagline">DROP IN. STACK TRICKS. BEAT THE CLOCK.</p>
+          <div class="run-stamp">
+            <span class="stamp-big">2:00</span>
+            <span class="stamp-small">TRICK<br>RUN</span>
+          </div>
+          <div class="start-row">
+            <button id="startBtn" class="primary" type="button">START GAME</button>
+            <div class="start-note">120 SECONDS<br>ONE LINE</div>
+          </div>
+          <div class="intro-controls">
+            <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>ride &amp; steer</span></div>
+            <div><kbd>SPACE</kbd><span>hold, release to ollie</span></div>
+            <div><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><span>kickflip / heelflip / shove-it</span></div>
+            <div><kbd>G</kbd><span>hold to grab</span></div>
+            <div><kbd>C</kbd><span>hold for manual</span></div>
+          </div>
+          <p class="touch-note">TOUCH: STICK TO RIDE · OLLIE · FLIP · GRAB · MANUAL</p>
+        </div>
+        <div class="intro-side">
+          <div class="side-tag">EST. 2026</div>
+          <div class="side-copy">CONCRETE<br>+ SUNSHINE<br>+ NO CURFEW</div>
+          <div class="side-bars"></div>
+        </div>
+      </div>
+      <div class="intro-footer">
+        <span>THREE.JS • PROCEDURAL PARK • NO DOWNLOADS</span>
+        <span class="footer-tip">TIP: LAND WITH A FLIP STILL SPINNING AND YOU BAIL.</span>
+      </div>
+    </section>
+
+    <section id="results" class="overlay results hidden">
+      <div class="results-card">
+        <span class="micro-label">RUN COMPLETE</span>
+        <h2 class="results-title">THAT'S<br>A WRAP</h2>
+        <div class="final-score-wrap">
+          <span>FINAL SCORE</span>
+          <strong id="finalScore">0</strong>
+          <em id="newBest" class="new-best hidden">NEW PERSONAL BEST</em>
+        </div>
+        <div class="stat-grid">
+          <div><span>BEST TRICK</span><b id="statBest">—</b></div>
+          <div><span>TRICKS LANDED</span><b id="statLanded">0</b></div>
+          <div><span>BIGGEST COMBO</span><b id="statCombo">0</b></div>
+          <div><span>BAILS</span><b id="statBails">0</b></div>
+        </div>
+        <div class="results-actions">
+          <button id="againBtn" class="primary" type="button">SKATE AGAIN</button>
+          <button id="menuBtn" class="ghost" type="button">BACK TO TITLE</button>
+        </div>
+        <div class="results-hint"><kbd>R</kbd> restart run</div>
+      </div>
+      <div class="confetti" id="confetti" aria-hidden="true"></div>
+    </section>
+
+    <div id="pauseOverlay" class="overlay pause hidden">
+      <div class="pause-card">
+        <span class="micro-label">TIME OUT</span>
+        <h2>PAUSED</h2>
+        <p>The clock is stopped. Catch your breath.</p>
+        <button id="resumeBtn" class="primary" type="button">RESUME RUN</button>
+      </div>
+    </div>
+
+    <div id="touch" class="touch hidden">
+      <div id="stick" class="stick" aria-label="Steering joystick">
+        <div class="stick-ring"></div>
+        <div id="stickKnob" class="stick-knob"></div>
+      </div>
+      <div class="touch-actions">
+        <button class="tbtn tbtn-small" data-action="manual" type="button">MANUAL</button>
+        <button class="tbtn tbtn-small" data-action="grab" type="button">GRAB</button>
+        <button class="tbtn tbtn-mid" data-action="flip" type="button">FLIP</button>
+        <button class="tbtn tbtn-ollie" data-action="ollie" type="button">OLLIE</button>
+      </div>
+    </div>
+
+    <div id="loader" class="loader">
+      <div class="loader-mark">TP</div>
+      <div class="loader-text">WAXING THE LEDGES<span class="dots">...</span></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
